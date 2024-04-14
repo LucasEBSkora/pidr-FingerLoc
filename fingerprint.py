@@ -27,6 +27,7 @@ fingerprint_file_path = sys.argv[1]
 # This method is called when the connection is (re)stablished to the server
 # it connects to the topic where the rssi data is published
 def on_connect(client, userdata, flags, reason_code, properties):
+    print("connected")
     client.subscribe(credentials.subscribe_topic)
 
 # This method is called when a message is published to the topic
