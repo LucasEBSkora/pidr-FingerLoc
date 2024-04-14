@@ -1,6 +1,10 @@
 import pandas as pd
 import numpy as np
 
-fingerprints = pd.read_csv("data/fingerprints.csv", index_col=0)
-data = fingerprints.drop(columns=["ID"]).groupby(["x","y"], sort=False).mean().reset_index()
-data.to_csv("data/fingerprint_mean_values.csv")
+def format(path):
+  fingerprints = pd.read_csv(f"data/{path}.csv", index_col=0)
+  data = fingerprints.drop(columns=["ID"]).groupby(["x","y"], sort=False).mean().reset_index()
+  data.to_csv(f"data/{path}_mean_values.csv")
+
+format("fingerprints")
+format("samples")
