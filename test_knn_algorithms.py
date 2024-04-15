@@ -19,22 +19,28 @@ Xavg,Yavg = formatFingerprints(fingerprintsAVG)
 Xsamples, Ysamples = formatFingerprints(samples)
 XsamplesAvg, YsamplesAvg = formatFingerprints(samplesAVG)
 
-def makeKNNModel(k, weights='uniform'):
-  alg = KNeighborsRegressor(n_neighbors=k, weights=weights)
+def makeBasicModel(X, Y, k, weight):
+  alg = KNeighborsRegressor(n_neighbors=k, weights=weight)
   alg.fit(X, Y)
   return alg
 
-def makeWeightedKNNModel(k):
-  return makeKNNModel(k, 'distance')
+def makeKNNModel(k):
+  return makeBasicModel(X,Y,k, 'uniform')
 
-def makeKNNModelAvg(k, weights='uniform'):
-  alg = KNeighborsRegressor(n_neighbors=k, weights=weights)
-  alg.fit(Xavg, Yavg)
-  return alg
-# Tests for KNN, using individual samples instead of averages
+def makeWeightedKNNModel(k):
+  return makeBasicModel(X,Y,k, 'distance')
+
+def makeKNNModelAvg(k):
+  return makeBasicModel(Xavg, Yavg, k, 'uniform')
 
 def makeWeightedKNNModelAvg(k):
-  return makeKNNModelAvg(k, 'distance')
+  return makeBasicModel(Xavg, Yavg, k, 'distance')
+
+def makeProbabilisticKNNModel(k):
+  alg = KNeighborsRegressor(n_neighbors=k, weights=weight)
+  alg.fit(Xavg, Yavg)
+  return alg
+
 
 def testScoreAndAvgTime(model, X, Y):
   t0 = process_time_ns()
