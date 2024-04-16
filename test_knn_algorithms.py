@@ -21,8 +21,7 @@ XsamplesAvg, YsamplesAvg = formatFingerprints(samplesAVG)
 
 def makeBasicModel(X, Y, k, weight):
   alg = KNeighborsRegressor(n_neighbors=k, weights=weight)
-  alg.fit(X, Y)
-  return alg
+  return alg.fit(X, Y)
 
 def makeKNNModel(k):
   return makeBasicModel(X,Y,k, 'uniform')
