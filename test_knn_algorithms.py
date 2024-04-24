@@ -13,74 +13,79 @@ def formatFingerprints(fingerprints):
   Y = (fingerprints[["x", "y"]]).to_numpy()
   return (X, Y)
 
-X,Y = formatFingerprints(fingerprints)
-Xavg,Yavg = formatFingerprints(fingerprintsAVG)
 Xsamples, Ysamples = formatFingerprints(samples)
 XsamplesAvg, YsamplesAvg = formatFingerprints(samplesAVG)
 
-def makeBasicModel(X, Y, k, weight):
-  alg = KNeighborsRegressor(n_neighbors=k, weights=weight)
-  return alg.fit(X, Y)
+for grid in [(pd.read_csv("data/fingerprints.csv", index_col=0), pd.read_csv("./data/fingerprints_mean_values.csv", index_col=0), ""),
+             (pd.read_csv("data/fingerprints_grid1.2.csv", index_col=0), pd.read_csv("./data/fingerprints_mean_values_grid1.2.csv", index_col=0), "grid_1.2"),
+             (pd.read_csv("data/fingerprints_grid1.8.csv", index_col=0), pd.read_csv("./data/fingerprints_mean_values_grid1.8.csv", index_col=0), "grid_1.8")]:
 
-def makeKNNModel(k):
-  return makeBasicModel(X,Y,k, 'uniform')
+  X,Y = formatFingerprints(grid[0])
+  Xavg,Yavg = formatFingerprints(grid[1])
 
-def makeWeightedKNNModel(k):
-  return makeBasicModel(X,Y,k, 'distance')
+  def makeBasicModel(X, Y, k, weight):
+    alg = KNeighborsRegressor(n_neighbors=k, weights=weight)
+    return alg.fit(X, Y)
 
-def makeKNNModelAvg(k):
-  return makeBasicModel(Xavg, Yavg, k, 'uniform')
+  def makeKNNModel(k):
+    return makeBasicModel(X,Y,k, 'uniform')
 
-def makeWeightedKNNModelAvg(k):
-  return makeBasicModel(Xavg, Yavg, k, 'distance')
+  def makeWeightedKNNModel(k):
+    return makeBasicModel(X,Y,k, 'distance')
 
-def testScoreAndAvgTime(model, X, Y):
-  t0 = process_time_ns()
-  score = model.score(X, Y)
-  dt = process_time_ns() - t0
-  return (score, dt/(len(X)))
+  def makeKNNModelAvg(k):
+    return makeBasicModel(Xavg, Yavg, k, 'uniform')
 
-def plotColumns(dataframe, columnNames, plotname):
-  dataframe[columnNames].plot()
-  plt.savefig(plotname)
+  def makeWeightedKNNModelAvg(k):
+    return makeBasicModel(Xavg, Yavg, k, 'distance')
 
-def runTests(testName, makeModelFunction, maxk):
-  timeToFitModel = []
-  timeToProcessSamples = []
-  accuracyScore = []
-  timeToProcessSamplesAvg = []
-  accuracyScoreAvg = []
-
-  for k in range(1, maxk+1):
-
+  def testScoreAndAvgTime(model, X, Y):
     t0 = process_time_ns()
-    alg = makeModelFunction(k)
+    score = model.score(X, Y)
     dt = process_time_ns() - t0
-    timeToFitModel.append(dt/1e6)
+    return (score, dt/(len(X)))
 
-    score, time = testScoreAndAvgTime(alg, XsamplesAvg, YsamplesAvg)
-    timeToProcessSamplesAvg.append(time)
-    accuracyScoreAvg.append(score)
+  def plotColumns(dataframe, columnNames, plotname):
+    dataframe[columnNames].plot()
+    plt.savefig(plotname)
 
-    score, time = testScoreAndAvgTime(alg, Xsamples, Ysamples)
-    timeToProcessSamples.append(time)
-    accuracyScore.append(score)
+  def runTests(testName, makeModelFunction, maxk):
+    timeToFitModel = []
+    timeToProcessSamples = []
+    accuracyScore = []
+    timeToProcessSamplesAvg = []
+    accuracyScoreAvg = []
 
-  testResults = pd.DataFrame({'timeToFitModel' : timeToFitModel,
-                    'timeToProcessSamples' : timeToProcessSamples,
-                    'accuracyScore' : accuracyScore,
-                    'timeToProcessSamplesAvg' : timeToProcessSamplesAvg,
-                    'accuracyScoreAvg' : accuracyScoreAvg},
-                    index=list(range(1,47)))
+    for k in range(1, maxk+1):
 
-  testResults.to_csv(f"./results/{testName}Results.csv")
-  plotColumns(testResults, ['accuracyScore', 'accuracyScoreAvg'], f"./results/{testName}ScoreResults.png")
-  plotColumns(testResults, ['timeToFitModel', 'timeToProcessSamples', 'timeToProcessSamplesAvg'],f"./results/{testName}timeResults.png")
-  testResults['scoreByTime'] = testResults['accuracyScore']/testResults['timeToProcessSamples']
-  testResults['scoreByTimeAvg'] = testResults['accuracyScoreAvg']/testResults['timeToProcessSamplesAvg']
-  plotColumns(testResults, ['scoreByTime', 'scoreByTimeAvg'], f"./results/{testName}scoreByTime.png")
+      t0 = process_time_ns()
+      alg = makeModelFunction(k)
+      dt = process_time_ns() - t0
+      timeToFitModel.append(dt/1e6)
 
-runTests("KNN", makeKNNModel, 46)
-runTests("KNNAvg", makeKNNModelAvg, 46)
-runTests("WKNN", makeWeightedKNNModel, 46)
-runTests("WKNNAvg", makeWeightedKNNModelAvg, 46)
+      score, time = testScoreAndAvgTime(alg, XsamplesAvg, YsamplesAvg)
+      timeToProcessSamplesAvg.append(time)
+      accuracyScoreAvg.append(score)
+
+      score, time = testScoreAndAvgTime(alg, Xsamples, Ysamples)
+      timeToProcessSamples.append(time)
+      accuracyScore.append(score)
+
+    testResults = pd.DataFrame({'timeToFitModel' : timeToFitModel,
+                      'timeToProcessSamples' : timeToProcessSamples,
+                      'accuracyScore' : accuracyScore,
+                      'timeToProcessSamplesAvg' : timeToProcessSamplesAvg,
+                      'accuracyScoreAvg' : accuracyScoreAvg},
+                      index=list(range(1,1+maxk)))
+
+    testResults.to_csv(f"./results/{testName}Results{grid[2]}.csv")
+    plotColumns(testResults, ['accuracyScore', 'accuracyScoreAvg'], f"./results/{testName}ScoreResults{grid[2]}.png")
+    plotColumns(testResults, ['timeToFitModel', 'timeToProcessSamples', 'timeToProcessSamplesAvg'],f"./results/{testName}timeResults{grid[2]}.png")
+    testResults['scoreByTime'] = testResults['accuracyScore']/testResults['timeToProcessSamples']
+    testResults['scoreByTimeAvg'] = testResults['accuracyScoreAvg']/testResults['timeToProcessSamplesAvg']
+    plotColumns(testResults, ['scoreByTime', 'scoreByTimeAvg'], f"./results/{testName}scoreByTime{grid[2]}.png")
+
+  runTests("KNN", makeKNNModel, len(Xavg))
+  runTests("KNNAvg", makeKNNModelAvg, len(Xavg))
+  runTests("WKNN", makeWeightedKNNModel, len(Xavg))
+  runTests("WKNNAvg", makeWeightedKNNModelAvg, len(Xavg))

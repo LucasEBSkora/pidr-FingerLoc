@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 
 def format(path):
   fingerprints = pd.read_csv(f"data/{path}.csv", index_col=0).drop(columns=["ID"])
