@@ -2,37 +2,43 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsRegressor
 from time import process_time_ns
+from math import pi, exp, sqrt
+from numpy import concatenate, zeros
 
-fingerprints = pd.read_csv("data/fingerprints.csv", index_col=0)
 fingerprintsAVG = pd.read_csv("./data/fingerprints_mean_values.csv", index_col=0)
 samples = pd.read_csv("data/samples.csv", index_col=0)
 samplesAVG = pd.read_csv("data/samples_mean_values.csv", index_col=0)
 
+def formatSamples(samples):
+  X = samples[["rssi1", "rssi2", "rssi3", "rssi4", "rssi5"]].to_numpy()
+  X = concatenate([X, zeros((len(X), 5), float)], axis=1)
+  Y = (samples[["x", "y"]]).to_numpy()
+  return (X, Y)
+
 def formatFingerprints(fingerprints):
-  X = fingerprints[["rssi1", "rssi2", "rssi3", "rssi4", "rssi5"]].to_numpy()
+  X = fingerprints.drop(columns=['x', 'y']).to_numpy()
   Y = (fingerprints[["x", "y"]]).to_numpy()
   return (X, Y)
 
-X,Y = formatFingerprints(fingerprints)
-Xavg,Yavg = formatFingerprints(fingerprintsAVG)
-Xsamples, Ysamples = formatFingerprints(samples)
-XsamplesAvg, YsamplesAvg = formatFingerprints(samplesAVG)
+Xprob,Yavg = formatFingerprints(fingerprintsAVG)
+Xsamples, Ysamples = formatSamples(samples)
+XsamplesAvg, YsamplesAvg = formatSamples(samplesAVG)
 
-def makeBasicModel(X, Y, k, weight):
-  alg = KNeighborsRegressor(n_neighbors=k, weights=weight)
-  return alg.fit(X, Y)
+def normalPDF(mean, stddev, sample):
+  return exp(-(((sample-mean)/stddev)**2)/2)/(stddev*sqrt(2*pi))
 
-def makeKNNModel(k):
-  return makeBasicModel(X,Y,k, 'uniform')
+def probabilisticDistance(v1, v2):
+  distance = 5
+  for i in range(0, 5):
+    mean = v2[i]
+    stddev = v2[i+5]
+    distance -= normalPDF(mean, stddev, v1[i])
+  return distance
 
-def makeWeightedKNNModel(k):
-  return makeBasicModel(X,Y,k, 'distance')
-
-def makeKNNModelAvg(k):
-  return makeBasicModel(Xavg, Yavg, k, 'uniform')
-
-def makeWeightedKNNModelAvg(k):
-  return makeBasicModel(Xavg, Yavg, k, 'distance')
+def makeProbabilisticKNNModel(k):
+  alg = KNeighborsRegressor(n_neighbors=k, metric=probabilisticDistance)
+  alg.fit(Xprob, Yavg)
+  return alg
 
 def testScoreAndAvgTime(model, X, Y):
   t0 = process_time_ns()
@@ -80,7 +86,4 @@ def runTests(testName, makeModelFunction, maxk):
   testResults['scoreByTimeAvg'] = testResults['accuracyScoreAvg']/testResults['timeToProcessSamplesAvg']
   plotColumns(testResults, ['scoreByTime', 'scoreByTimeAvg'], f"./results/{testName}scoreByTime.png")
 
-runTests("KNN", makeKNNModel, 46)
-runTests("KNNAvg", makeKNNModelAvg, 46)
-runTests("WKNN", makeWeightedKNNModel, 46)
-runTests("WKNNAvg", makeWeightedKNNModelAvg, 46)
+runTests("PKNN", makeProbabilisticKNNModel, 46)
