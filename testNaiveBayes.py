@@ -70,7 +70,7 @@ def testScoreAndAvgTimeProb(samples, expected):
   Ypred = (probs @ Yavg).to_numpy()
   score = calcScore(Ypred, expected)
   dt = process_time_ns() - t0
-  return (score, dt/(len(samples)))
+  return (score, dt/(len(samples)*1e6))
 
 def plotColumns(dataframe, columnNames, plotname):
   dataframe[columnNames].plot()

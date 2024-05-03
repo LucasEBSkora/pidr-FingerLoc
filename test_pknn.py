@@ -44,7 +44,7 @@ def testScoreAndAvgTime(model, X, Y):
   t0 = process_time_ns()
   score = model.score(X, Y)
   dt = process_time_ns() - t0
-  return (score, dt/(len(X)))
+  return (score, dt/(len(X)*1e6))
 
 def plotColumns(dataframe, columnNames, plotname):
   dataframe[columnNames].plot()

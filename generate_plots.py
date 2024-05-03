@@ -6,7 +6,7 @@ from mpl_toolkits.axes_grid1 import Divider, Size
 fingerprints = pd.read_csv("data/fingerprints.csv", index_col=0)
 samples = pd.read_csv("data/samples.csv", index_col=0)
 
-plt.style.use('_mpl-gallery')
+# plt.style.use('_mpl-gallery')
 
 def generate_map(fingerprints, samples):
   # gets only the unique location values of the fingerprints and samples
@@ -14,17 +14,17 @@ def generate_map(fingerprints, samples):
   samples_xy = samples[["x", "y"]].drop_duplicates()
   data = pd.concat([fingerprints_xy, samples_xy])
 
-  fig, ax = plt.subplots(figsize=(3.8/2,7.4/2))
+  fig, ax = plt.subplots(figsize=(7.8/2, 4.2/2))
 
   # Colors fingerprints blue and samples green
   colors = [(0,0,1)]*len(fingerprints_xy) + [(0,1,0)]*len(samples_xy)
 
-  ax.scatter(data["x"], data["y"], vmin=0, vmax=8, color=colors)
+  ax.scatter(data["y"], data["x"], vmin=0, vmax=8, color=colors)
 
   #makes the graph with a tick on each meter, 
   #with a border of 60cm on every direction
-  ax.set(xlim=(-0.4, 3.4), xticks=np.arange(0, 4),
-        ylim=(-0.4, 7), yticks=np.arange(0, 8))
+  ax.set(xlim=(-0.6, 7.2), xticks=np.arange(0, 8), xticklabels=np.arange(0,8),
+        ylim=(-0.6, 3.6), yticks=np.arange(0, 4))
 
   plt.savefig("plots/map.png")
 
@@ -45,6 +45,6 @@ def generate_heatmap(fingerprints):
 
     plt.savefig(f"plots/beacon{i}heatmap.png")
 
-# generate_map(fingerprints, samples)
-generate_heatmap(fingerprints)
+generate_map(fingerprints, samples)
+# generate_heatmap(fingerprints)
 
