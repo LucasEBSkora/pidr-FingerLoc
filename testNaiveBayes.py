@@ -4,7 +4,6 @@ from sklearn.multioutput import MultiOutputClassifier
 from sklearn.naive_bayes import GaussianNB
 from time import process_time_ns
 import numpy as np
-from math import sqrt
 
 fingerprints = pd.read_csv("data/fingerprints.csv", index_col=0)
 fingerprintsAVG = pd.read_csv("data/fingerprints_mean_values.csv", index_col=0)
@@ -36,7 +35,10 @@ def makeNaiveBayesModel():
   alg = GaussianNB()
   return alg.fit(X, Yflat)
 
+t0 = process_time_ns()
 model = makeNaiveBayesModel()
+dt = process_time_ns() - t0
+timeToFitModel = dt/1e6
 
 def makeNaiveBayesAvgModel():
   alg = GaussianNB()
@@ -53,13 +55,21 @@ def calcScore(true, pred):
   v = ((true - true.mean()) ** 2).sum()
   return 1 - (u/v)
 
+def calcAverageError(predicted, expected):
+  error = predicted - expected
+  error = error * error
+  error = error[:, 0] + error[:, 1]
+  error = np.sum(np.sqrt(error)) / len(predicted)
+  return error
+
 def testScoreAndAvgTimeClosestClass(samples, expected):
   t0 = process_time_ns()
   labels = model.predict(samples)
   Ypred = LabelToSpace(labels)
   score = calcScore(Ypred, expected)
   dt = process_time_ns() - t0
-  return (score, dt/(len(samples)))
+  error = calcAverageError(Ypred, expected)
+  return (score, dt/(len(samples)*1e6), error)
 
 def testScoreAndAvgTimeProb(samples, expected):
   t0 = process_time_ns()
@@ -70,7 +80,8 @@ def testScoreAndAvgTimeProb(samples, expected):
   Ypred = (probs @ Yavg).to_numpy()
   score = calcScore(Ypred, expected)
   dt = process_time_ns() - t0
-  return (score, dt/(len(samples)*1e6))
+  error = calcAverageError(Ypred, expected)
+  return (score, dt/(len(samples)*1e6), error)
 
 def plotColumns(dataframe, columnNames, plotname):
   dataframe[columnNames].plot()
@@ -78,29 +89,27 @@ def plotColumns(dataframe, columnNames, plotname):
 
 def runTests(testName, testScoreAndTime):
 
-  t0 = process_time_ns()
-  dt = process_time_ns() - t0
-  timeToFitModel = dt/1e6
+  accuracyScoreAvg, timeToProcessSamplesAvg, errorAvg  = testScoreAndTime(XsamplesAvg, YsamplesAvg)
 
-  score, time = testScoreAndTime(XsamplesAvg, YsamplesAvg)
-  timeToProcessSamplesAvg = time
-  accuracyScoreAvg = score
-
-  # score, time = testScoreAndTime(Xsamples, Ysamples)
-  timeToProcessSamples = time
-  accuracyScore = score
+  score, time, error = testScoreAndTime(Xsamples, Ysamples)
 
   testResults = pd.Series({'timeToFitModel' : timeToFitModel,
-                    'timeToProcessSamples' : timeToProcessSamples,
-                    'accuracyScore' : accuracyScore,
+                    'timeToProcessSamples' : time,
+                    'accuracyScore' : score,
+                    'error': error,
                     'timeToProcessSamplesAvg' : timeToProcessSamplesAvg,
-                    'accuracyScoreAvg' : accuracyScoreAvg}
+                    'accuracyScoreAvg' : accuracyScoreAvg,
+                    'errorAvg': errorAvg}
                     )
   
   testResults.to_csv(f"./results/{testName}Results.csv")
 
 runTests("NaiveBayesClosest", testScoreAndAvgTimeClosestClass)
 runTests("NaiveBayesProb", testScoreAndAvgTimeProb)
+t0 = process_time_ns()
 model = makeNaiveBayesAvgModel()
+dt = process_time_ns() - t0
+timeToFitModel = dt/1e6
+
 runTests("NaiveBayesAvgClosest", testScoreAndAvgTimeClosestClass)
 runTests("NaiveBayesAvgProb", testScoreAndAvgTimeProb)

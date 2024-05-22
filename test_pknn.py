@@ -2,8 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsRegressor
 from time import process_time_ns
-from math import pi, exp, sqrt
-from numpy import concatenate, zeros
+from math import pi, exp
+from numpy import concatenate, zeros, sqrt, sum
 
 fingerprintsAVG = pd.read_csv("./data/fingerprints_mean_values.csv", index_col=0)
 samples = pd.read_csv("data/samples.csv", index_col=0)
@@ -46,6 +46,14 @@ def testScoreAndAvgTime(model, X, Y):
   dt = process_time_ns() - t0
   return (score, dt/(len(X)*1e6))
 
+def calcAverageError(model, X, Y):
+  Ypred = model.predict(X)
+  error = Y - Ypred
+  error = error * error
+  error = error[:, 0] + error[:, 1]
+  error = sum(sqrt(error)) / len(X)
+  return error
+
 def plotColumns(dataframe, columnNames, plotname):
   dataframe[columnNames].plot()
   plt.savefig(plotname)
@@ -54,8 +62,10 @@ def runTests(testName, makeModelFunction, maxk):
   timeToFitModel = []
   timeToProcessSamples = []
   accuracyScore = []
+  errorAvg = []
   timeToProcessSamplesAvg = []
   accuracyScoreAvg = []
+  error = []
 
   for k in range(1, maxk+1):
 
@@ -67,19 +77,23 @@ def runTests(testName, makeModelFunction, maxk):
     score, time = testScoreAndAvgTime(alg, XsamplesAvg, YsamplesAvg)
     timeToProcessSamplesAvg.append(time)
     accuracyScoreAvg.append(score)
+    errorAvg.append(calcAverageError(alg, XsamplesAvg, YsamplesAvg))
 
     score, time = testScoreAndAvgTime(alg, Xsamples, Ysamples)
     timeToProcessSamples.append(time)
     accuracyScore.append(score)
+    error.append(calcAverageError(alg, Xsamples, Ysamples))
 
   testResults = pd.DataFrame({'timeToFitModel' : timeToFitModel,
                     'timeToProcessSamples' : timeToProcessSamples,
                     'accuracyScore' : accuracyScore,
+                    'error': error,
                     'timeToProcessSamplesAvg' : timeToProcessSamplesAvg,
-                    'accuracyScoreAvg' : accuracyScoreAvg},
+                    'accuracyScoreAvg' : accuracyScoreAvg,
+                    'errorAvg': errorAvg},
                     index=list(range(1,47)))
 
-  testResults.to_csv(f"./results/{testName}Results.csv")
+  testResults.to_csv(f"./results/{testName}AvgResults.csv")
   plotColumns(testResults, ['accuracyScore', 'accuracyScoreAvg'], f"./results/{testName}ScoreResults.png")
   plotColumns(testResults, ['timeToFitModel', 'timeToProcessSamples', 'timeToProcessSamplesAvg'],f"./results/{testName}timeResults.png")
   testResults['scoreByTime'] = testResults['accuracyScore']/testResults['timeToProcessSamples']

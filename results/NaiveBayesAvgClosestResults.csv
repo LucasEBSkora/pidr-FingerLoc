@@ -1,6 +1,8 @@
 ,0
-timeToFitModel,0.001377
-timeToProcessSamples,232141.0
-accuracyScore,0.23338118022328525
-timeToProcessSamplesAvg,232141.0
+timeToFitModel,2.086628
+timeToProcessSamples,0.014457333333333334
+accuracyScore,-0.033191322214164876
+error,1.7757427510915182
+timeToProcessSamplesAvg,0.2673296666666667
 accuracyScoreAvg,0.23338118022328525
+errorAvg,1.4803019858987563
